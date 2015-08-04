@@ -32,6 +32,14 @@
 #define TIM6_PSC        (TIM6_BASE+0x28)
 #define TIM6_ARR        (TIM6_BASE+0x2C)
 
+#define GP_TIMER_CR1(a)     (a)
+#define GP_TIMER_CCMR1(a)   ((a)+0x18)
+#define GP_TIMER_CCER(a)    ((a)+0x20)
+#define GP_TIMER_PSC(a)     ((a)+0x28)
+#define GP_TIMER_ARR(a)     ((a)+0x2C)
+#define GP_TIMER_CCR1(a)    ((a)+0x34)
+
+
 #define GPIOA_BASE          0x40010800
 #define GPIOB_BASE          0x40010c00
 #define GPIOC_BASE          0x40011000

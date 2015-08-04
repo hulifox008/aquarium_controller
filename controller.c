@@ -1,11 +1,10 @@
 /* Resource allocation:
- * Timer2:  PWM for light control 1.
+ * PA0, Timer2 CH1:  PWM for airpump.
  * Timer3:  PWM for light control 2.
  * Timer6:  Time measurement for udelay() function.
- * GPIOA_0: 1-Wire temperature (DS18B20)
+ *
+ * : 1-Wire temperature (DS18B20)
  */
-
-#define  AIRPUMP_CONTROL
 
 #include "types.h"
 #include "io.h"
@@ -84,12 +83,17 @@ void timer_init()
 
 void gpio_init()
 {
-#ifdef AIRPUMP_CONTROL
-    writel(GPIO_MODE_2M , GPIOA_BASE+GPIO_CRL_OFFSET);
-#else
-    writel(GPIO_MODE_INPUT | GPIO_CNF_IN_HIZ, GPIOA_BASE+GPIO_CRL_OFFSET);
-    writel(readl(GPIOA_BASE+GPIO_ODR_OFFSET) & ~1, GPIOA_BASE+GPIO_ODR_OFFSET);
-#endif
+    writel(GPIO_MODE_2M | GPIO_CNF_ALT_PP<<2, GPIOA_BASE+GPIO_CRL_OFFSET);
+}
+
+void init_airpump_pwm()
+{
+    writel(0x3b, GP_TIMER_PSC(TIM2_BASE));
+    writel(0xea60, GP_TIMER_ARR(TIM2_BASE));
+    writel(0x1, GP_TIMER_CCER(TIM2_BASE));
+    writel(0x7530, GP_TIMER_CCR1(TIM2_BASE));
+    writel(0x60, GP_TIMER_CCMR1(TIM2_BASE));
+    writel(1, GP_TIMER_CR1(TIM2_BASE));
 }
 
 void udelay(unsigned int duration)
@@ -134,20 +138,9 @@ int main()
     gpio_init();
     volatile int i;
 
-    #ifdef AIRPUMP_CONTROL
-    while(1){
-    for(i=0;i<10;i++) {
-        writel(1, GPIOA_BASE+GPIO_ODR_OFFSET);
-        udelay(20000);
-        writel(0, GPIOA_BASE+GPIO_ODR_OFFSET);
-        udelay(50000);
-    }
-    udelay(5000000);
-    }
-
-    #endif
+    init_airpump_pwm();
     while(1) {
-        ds18b20_get_temp(&tmp);
+/*        ds18b20_get_temp(&tmp); */
 
         udelay(1000000);
 
