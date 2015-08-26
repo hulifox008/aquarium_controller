@@ -10,7 +10,17 @@
 #include "io.h"
 #include "stm32f1x.h"
 
-char tmp = 0x5a;
+#define LIGHT_PWM_FREQ  320
+
+#define SECONDS_OF_DAY(h, m, s) ((h)*3600 + (m)*60 + (s))
+
+/* This is the lookup table for converting intense (0-100) to PWM timer match value */
+u_int16_t light_intense_table[100] = {0};
+
+void isr_rtc() __attribute__((interrupt("IRQ")));
+void isr_rtc()
+{
+}
 
 void sys_init()
 {
@@ -81,12 +91,14 @@ void timer_init()
     writel(0, TIM6_PSC);
 }
 
-void gpio_init()
+static void gpio_init()
 {
-    writel(GPIO_MODE_2M | GPIO_CNF_ALT_PP<<2, GPIOA_BASE+GPIO_CRL_OFFSET);
+    writel(GPIO_MODE_2M | GPIO_CNF_ALT_PP<<2
+        | GPIO_MODE_2M<<(4*6) | GPIO_CNF_ALT_PP<<(4*6+2), 
+        GPIOA_BASE+GPIO_CRL_OFFSET);
 }
 
-void init_airpump_pwm()
+static void init_airpump_pwm()
 {
     writel(0x3b, GP_TIMER_PSC(TIM2_BASE));
     writel(0xea60, GP_TIMER_ARR(TIM2_BASE));
@@ -95,6 +107,32 @@ void init_airpump_pwm()
     writel(0x60, GP_TIMER_CCMR1(TIM2_BASE));
     writel(1, GP_TIMER_CR1(TIM2_BASE));
 }
+
+static void init_intense_table(u_int16_t *table, u_int16_t timer_reload)
+{
+}
+
+static void init_light_pwm()
+{
+    #define TIMER3_FREQ 72000000
+    u_int16_t prescale = 0x3c;
+    u_int16_t reload = TIMER3_FREQ/prescale/LIGHT_PWM_FREQ;
+
+    writel(prescale-1, GP_TIMER_PSC(TIM3_BASE));
+    writel(reload, GP_TIMER_ARR(TIM3_BASE));
+    writel(0x1, GP_TIMER_CCER(TIM3_BASE));
+    writel(0, GP_TIMER_CCR1(TIM3_BASE));
+    writel(0x60, GP_TIMER_CCMR1(TIM3_BASE));
+    writel(1, GP_TIMER_CR1(TIM3_BASE));
+
+    init_intense_table(light_intense_table, reload);
+}
+
+/* intense is 0 - 100 */
+void set_light_pwm(u_int8_t intense)
+{
+}
+
 
 void udelay(unsigned int duration)
 {
@@ -139,6 +177,20 @@ int main()
     volatile int i;
 
     init_airpump_pwm();
+    init_light_pwm();
+    while(1){
+        for(i=10;i<0xe00;i=i+i*1/10){ 
+            writel(i, GP_TIMER_CCR1(TIM3_BASE));
+            udelay(20000);
+        }
+        udelay(3000000);
+        for(i=0xea0;i>10;i=i-i*1/10){ 
+            writel(i, GP_TIMER_CCR1(TIM3_BASE));
+            udelay(20000);
+        }
+        writel(0, GP_TIMER_CCR1(TIM3_BASE));
+        udelay(3000000);
+    }
     while(1) {
 /*        ds18b20_get_temp(&tmp); */
 

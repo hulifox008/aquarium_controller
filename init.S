@@ -8,6 +8,9 @@
 .word   0x20008000      /* SP */
 .word   start
 
+.org    0x4C
+.word   isr_rtc
+
 /* End IVT */
 
 .org    0x300

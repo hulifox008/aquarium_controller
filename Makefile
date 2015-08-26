@@ -15,11 +15,17 @@ controller.elf: init.o controller.o one-wire.o
 init.o: init.S
 	${TARGET_AS} -k -mthumb -mlittle-endian init.S -o init.o
 
-controller.o: controller.c 
-	${TARGET_GCC} ${CFLAGS} -mthumb -mcpu=cortex-m3 -c $^ -o controller.o
 
-one-wire.o: one-wire.c
-	${TARGET_GCC} ${CFLAGS} -mthumb -mcpu=cortex-m3 -c $^ -o one-wire.o
+#controller.o: controller.c 
+#	${TARGET_GCC} ${CFLAGS} -mthumb -mcpu=cortex-m3 -c $^ -o controller.o
+
+#one-wire.o: one-wire.c
+#	${TARGET_GCC} ${CFLAGS} -mthumb -mcpu=cortex-m3 -c $^ -o one-wire.o
+#
+#
+%.o: %.c
+	${TARGET_GCC} ${CFLAGS} -mthumb -mcpu=cortex-m3 -c $< -o $@
+	
 
 clean:
 	rm -fr *.o
